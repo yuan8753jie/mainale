@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 埋哪了
 
-## Getting Started
+为无碑墓地创建数字标记，让后人能找到先人安息之处。
 
-First, run the development server:
+## 功能
+
+- GPS定位打点
+- 拍照记录
+- 填写基本信息（姓名、称谓、备注）
+- 列表查看所有记录
+- 导航到墓地位置（高德地图）
+- 分享链接给家人
+
+## 技术栈
+
+- **前端**: Next.js 14 (App Router) + Tailwind CSS
+- **后端**: Supabase (PostgreSQL + Storage + Auth)
+- **认证**: 手机号短信登录
+
+## 快速开始
+
+### 1. 创建 Supabase 项目
+
+1. 访问 [supabase.com](https://supabase.com) 创建免费账号
+2. 创建新项目
+3. 在 SQL Editor 中运行 `supabase-schema.sql` 创建数据库表
+
+### 2. 配置 Storage Bucket
+
+在 Supabase Dashboard:
+1. 进入 Storage
+2. 创建名为 `photos` 的 bucket，设置为 Public
+3. 添加策略允许认证用户上传
+
+### 3. 配置短信认证（可选）
+
+Supabase 默认使用 Twilio 发送短信：
+1. 进入 Authentication > Providers
+2. 配置 Phone (SMS) 认证
+3. 填入 Twilio 账号信息
+
+> 开发阶段可以在 Authentication > Users 手动创建用户测试
+
+### 4. 配置环境变量
+
+复制 `.env.local.example` 为 `.env.local`，填入 Supabase 配置：
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+从 Supabase Dashboard > Settings > API 获取：
+- `NEXT_PUBLIC_SUPABASE_URL`: Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: anon/public key
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. 本地运行
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+访问 http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+### 6. 部署到 Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. 推送代码到 GitHub
+2. 在 Vercel 导入项目
+3. 添加环境变量
+4. 部署完成
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 项目结构
 
-## Deploy on Vercel
+```
+mainale/
+├── app/
+│   ├── page.tsx              # 首页（列表）
+│   ├── login/page.tsx        # 登录页
+│   ├── add/page.tsx          # 新增记录
+│   ├── [id]/page.tsx         # 详情页
+│   ├── [id]/edit/page.tsx    # 编辑页
+│   └── share/[code]/page.tsx # 分享页（无需登录）
+├── components/
+│   ├── Header.tsx
+│   ├── GraveCard.tsx
+│   ├── LocationPicker.tsx
+│   └── PhotoUpload.tsx
+├── lib/
+│   ├── supabase.ts           # Supabase 客户端
+│   ├── types.ts              # TypeScript 类型
+│   └── utils.ts              # 工具函数
+└── supabase-schema.sql       # 数据库 Schema
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 数据库表结构
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```sql
+graves (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,        -- 用户ID
+  name TEXT NOT NULL,           -- 先人姓名
+  relation TEXT NOT NULL,       -- 称谓（爷爷、奶奶等）
+  note TEXT,                    -- 备注
+  latitude DOUBLE PRECISION,    -- 纬度
+  longitude DOUBLE PRECISION,   -- 经度
+  accuracy DOUBLE PRECISION,    -- GPS精度
+  photo_url TEXT,               -- 照片URL
+  share_code TEXT UNIQUE,       -- 分享码
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+)
+```
+
+## License
+
+MIT
